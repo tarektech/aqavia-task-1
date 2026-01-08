@@ -12,6 +12,8 @@ import {
   clearCookie,
   clearLocalStorage,
   hydrateFromStorage,
+  loadFromLocalStorage,
+  saveToCookie,
   saveToLocalStorage,
 } from "@/lib/storage";
 
@@ -57,7 +59,7 @@ type FormContextType = {
   isHydrated: boolean; // whether the form has been hydrated
   updateField: <K extends keyof FormData>(field: K, value: FormData[K]) => void; // update a single field
   submit: () => void; // submit the form data to the server
-  reset: () => void; // reset the form to initial state
+  reset: (clearStorage?: boolean) => void; // reset the form to initial state, optionally clear storage
   isLoading: boolean; // whether the form is loading
   isFormValid: boolean; // whether all required fields are filled
 };
@@ -121,8 +123,13 @@ export function FormProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       saveToLocalStorage(formData);
-      clearCookie();
+      saveToCookie(formData);
+      // Verify data was saved
+      const saved = loadFromLocalStorage();
+      console.log("✅ Form data saved to localStorage:", saved);
+      console.log("📦 Saved data keys:", Object.keys(saved || {}));
     } catch (error) {
+      console.error("❌ Failed to save form data:", error);
       setInputError((prev) => ({
         ...prev,
         [Object.keys(formData)[0]]:
@@ -133,10 +140,12 @@ export function FormProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  function reset() {
+  function reset(clearStorage = false) {
     dispatch({ type: "RESET" });
-    clearLocalStorage();
-    clearCookie();
+    if (clearStorage) {
+      clearLocalStorage();
+      clearCookie();
+    }
   }
 
   return (

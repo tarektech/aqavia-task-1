@@ -39,7 +39,8 @@ export function FormRequirements() {
     if (isFormValid && isChecked) {
       submit();
       toast.success("Form submitted successfully");
-      reset();
+      // Reset form fields but keep localStorage data for viewing on summary page
+      reset(false); // Don't clear storage - data persists for summary page
       setIsChecked(false);
     } else {
       toast.error("Please fill all required fields"); //TODO: add a more detailed error message
@@ -188,8 +189,14 @@ export function FormRequirements() {
           <Separator />
 
           <div className="flex items-center space-x-2">
-            <Checkbox id="isChecked" checked={isChecked} onCheckedChange={setIsChecked} />
-            <Label htmlFor="isChecked">I agree to the terms and conditions</Label>
+            <Checkbox
+              id="isChecked"
+              checked={isChecked}
+              onCheckedChange={setIsChecked}
+            />
+            <Label htmlFor="isChecked">
+              I agree to the terms and conditions
+            </Label>
           </div>
           <Button
             type="submit"

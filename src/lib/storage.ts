@@ -4,26 +4,81 @@ const STORAGE_KEY = "storage_form_key";
 const COOKIE_NAME = "cookie_form_key";
 const COOKIE_DAYS = 3;
 
-// to save the form data to the local storage
-export function saveToLocalStorage(data: FormData): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export type SavedForm = {
+  id: string;
+  data: FormData;
+  submittedAt: string;
+};
+
+// to save the form data to the local storage (appends to array)
+export function saveToLocalStorage(data: FormData): string {
+  if (typeof window === "undefined") return "";
+  const id = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const savedForm: SavedForm = {
+    id,
+    data,
+    submittedAt: new Date().toISOString(),
+  };
+
+  const existing = getAllSavedForms();
+  existing.push(savedForm);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  return id;
 }
 
-// to load the form data from the local storage
-export function loadFromLocalStorage(): FormData | null {
-  if (typeof window === "undefined") return null;
+// to load all saved forms from the local storage
+export function getAllSavedForms(): SavedForm[] {
+  if (typeof window === "undefined") return [];
   const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    // Handle migration from old single-form format
+    if (parsed && !Array.isArray(parsed)) {
+      // Old format - convert to new format
+      const oldForm: SavedForm = {
+        id: `form_${Date.now()}_migrated`,
+        data: parsed,
+        submittedAt: new Date().toISOString(),
+      };
+      return [oldForm];
+    }
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
-// to clear the form data from the local storage
+// to load a specific form by ID from the local storage
+export function getFormById(id: string): FormData | null {
+  const forms = getAllSavedForms();
+  const found = forms.find((form) => form.id === id);
+  return found ? found.data : null;
+}
+
+// to load the form data from the local storage (for backward compatibility - returns latest)
+export function loadFromLocalStorage(): FormData | null {
+  const forms = getAllSavedForms();
+  return forms.length > 0 ? forms[forms.length - 1].data : null;
+}
+
+// to clear all form data from the local storage
 export function clearLocalStorage(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
 }
 
+// to delete a specific form by ID
+export function deleteFormById(id: string): void {
+  if (typeof window === "undefined") return;
+  const forms = getAllSavedForms();
+  const filtered = forms.filter((form) => form.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+}
+
 // to save the form data to the cookie
+// Note: Cookies have ~4KB limit, so we exclude base64 media data and only store metadata
 export function saveToCookie(data: FormData): void {
   if (typeof document === "undefined") return;
   const expires = new Date();
@@ -56,10 +111,26 @@ export function clearCookie(): void {
 }
 
 // to hydrate the form data from the cookie or local storage
+// Merges cookie data with localStorage media (since cookie excludes base64 data)
 export function hydrateFromStorage(): FormData | null {
-  // First, try to load form data from the cookie.
-  // If the cookie doesn't exist or is empty (returns null),
-  // fall back to loading from localStorage using the nullish coalescing operator (??).
-  // This prioritizes cookie storage over localStorage for hydration.
-  return loadFromCookie() ?? loadFromLocalStorage();
+  const cookieData = loadFromCookie();
+  const localData = loadFromLocalStorage();
+
+  // If cookie exists, use it but merge media from localStorage
+  // (cookie only stores metadata, localStorage has full base64)
+  if (cookieData) {
+    return {
+      ...cookieData,
+      // Restore media from localStorage if cookie media is empty
+      image: cookieData.image?.dataUrl
+        ? cookieData.image
+        : localData?.image ?? null,
+      video: cookieData.video?.dataUrl
+        ? cookieData.video
+        : localData?.video ?? null,
+    };
+  }
+
+  // Cookie expired or doesn't exist - fallback to localStorage
+  return localData;
 }
