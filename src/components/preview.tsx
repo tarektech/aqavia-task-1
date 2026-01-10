@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ComponentType } from "react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 export function Preview() {
   const { formData } = useFormContext();
 
@@ -50,7 +51,9 @@ export function Preview() {
               <p className="text-sm text-muted-foreground">
                 {formData.image.name}
               </p>
-              <img
+              <Image
+                width={100}
+                height={100}
                 src={formData.image.dataUrl}
                 alt={formData.image.name}
                 className="w-full max-h-64 object-contain rounded-lg border border-border bg-muted/50"

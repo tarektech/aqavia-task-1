@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useReducer,
@@ -16,32 +17,6 @@ import {
   saveToCookie,
   saveToLocalStorage,
 } from "@/lib/storage";
-
-function validateForm(formData: FormData) {
-  const errors: Record<keyof FormData, string> = {
-    name: "",
-    email: "",
-    description: "",
-    image: "",
-    video: "",
-    radioSingleSelection: "",
-    multiCheckboxes: "",
-    status: "",
-    dueDate: "",
-  };
-  if (!formData.name) errors.name = "Name is required";
-  if (!formData.email) errors.email = "Email is required";
-  if (!formData.description) errors.description = "Description is required";
-  if (!formData.image) errors.image = "Image is required";
-  if (!formData.video) errors.video = "Video is required";
-  if (!formData.radioSingleSelection)
-    errors.radioSingleSelection = "Priority is required";
-  if (!formData.multiCheckboxes)
-    errors.multiCheckboxes = "Options are required";
-  if (!formData.status) errors.status = "Status is required";
-  if (!formData.dueDate) errors.dueDate = "Due Date is required";
-  return errors;
-}
 
 type FormActionType =
   | {
@@ -58,6 +33,7 @@ type FormContextType = {
   formData: FormData; // the current form data
   isHydrated: boolean; // whether the form has been hydrated
   updateField: <K extends keyof FormData>(field: K, value: FormData[K]) => void; // update a single field
+  loadFormData: (data: FormData) => void; // load form data (set all fields at once)
   submit: () => void; // submit the form data to the server
   reset: (clearStorage?: boolean) => void; // reset the form to initial state, optionally clear storage
   isLoading: boolean; // whether the form is loading
@@ -84,15 +60,6 @@ export function FormProvider({ children }: { children: React.ReactNode }) {
   const [formData, dispatch] = useReducer(formReducer, initialFormData);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [inputError, setInputError] = useState<Record<keyof FormData, string>>(
-    () => {
-      return validateForm(initialFormData);
-    }
-  );
-
-  useEffect(() => {
-    setInputError(validateForm(formData));
-  }, [formData]);
 
   // Check if all required fields are filled
   const isFormValid = Boolean(
@@ -115,11 +82,19 @@ export function FormProvider({ children }: { children: React.ReactNode }) {
     setIsHydrated(true);
   }, []);
 
-  function updateField<K extends keyof FormData>(field: K, value: FormData[K]) {
-    dispatch({ type: "SET_FIELD", field, value });
-  }
+  const updateField = useCallback(
+    <Key extends keyof FormData>(field: Key, value: FormData[Key]) => {
+      dispatch({ type: "SET_FIELD", field, value });
+    },
+    []
+  );
 
-  function submit() {
+  const loadFormData = useCallback((data: FormData) => {
+    // Merge with initialFormData to ensure all fields exist
+    dispatch({ type: "SET_ALL", data: { ...initialFormData, ...data } });
+  }, []);
+
+  const submit = () => {
     setIsLoading(true);
     try {
       saveToLocalStorage(formData);
@@ -130,23 +105,18 @@ export function FormProvider({ children }: { children: React.ReactNode }) {
       console.log("📦 Saved data keys:", Object.keys(saved || {}));
     } catch (error) {
       console.error("❌ Failed to save form data:", error);
-      setInputError((prev) => ({
-        ...prev,
-        [Object.keys(formData)[0]]:
-          error instanceof Error ? error.message : "An error occurred",
-      }));
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
-  function reset(clearStorage = false) {
+  const reset = (clearStorage = false) => {
     dispatch({ type: "RESET" });
     if (clearStorage) {
       clearLocalStorage();
       clearCookie();
     }
-  }
+  };
 
   return (
     <FormContext.Provider
@@ -154,6 +124,7 @@ export function FormProvider({ children }: { children: React.ReactNode }) {
         formData,
         isHydrated,
         updateField,
+        loadFormData,
         submit,
         reset,
         isLoading,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, startTransition } from "react";
 import {
   ImageIcon,
   VideoIcon,
@@ -12,7 +12,7 @@ import {
 import { Label } from "./label";
 import { Progress } from "./progress";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 type FileType = "image" | "video" | "file";
 type UploadStatus = "idle" | "uploading" | "completed" | "error";
@@ -72,15 +72,17 @@ export function FileUploadField({
   // Sync with external fileName prop to show the file name in the preview
   useEffect(() => {
     if (fileName) {
-      setCurrentFileName(fileName);
-      setStatus("completed");
-      setProgress(100);
+      startTransition(() => {
+        setCurrentFileName(fileName);
+      });
     } else if (!fileName && status === "completed") {
-      setCurrentFileName(null);
-      setStatus("idle");
-      setProgress(0);
+      startTransition(() => {
+        setCurrentFileName(null);
+        setStatus("idle");
+        setProgress(0);
+      });
     }
-  }, [fileName]);
+  }, [fileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const simulateProgress = () => {
     setProgress(0);

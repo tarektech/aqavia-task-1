@@ -18,7 +18,7 @@ import {
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 export function FormRequirements() {
   const [isChecked, setIsChecked] = useState(false);

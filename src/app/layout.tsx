@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { FormProvider } from "@/context/form-context";
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "react-hot-toast";
 
 const nunitoSans = Nunito_Sans({ variable: "--font-sans" });
 
@@ -36,7 +36,7 @@ export default function RootLayout({
           <Header />
           <main className="container">{children}</main>
         </FormProvider>
-        <Toaster />
+        <Toaster position="bottom-right" reverseOrder={false} />
       </body>
     </html>
   );

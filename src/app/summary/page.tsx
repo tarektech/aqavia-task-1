@@ -251,6 +251,7 @@ export default function SummaryPage() {
   );
 }
 
+//Preview section component for the form data
 function PreviewSection({
   title,
   children,
@@ -270,6 +271,7 @@ function PreviewSection({
   );
 }
 
+//Preview component for the form data
 function PreviewField({
   icon: Icon,
   label,
@@ -292,6 +294,7 @@ function PreviewField({
   );
 }
 
+//Empty preview component for the form data
 function EmptyPreview({
   icon: Icon,
   text,
