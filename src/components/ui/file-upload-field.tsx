@@ -13,6 +13,7 @@ import { Label } from "./label";
 import { Progress } from "./progress";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
+import { Input } from "./input";
 
 type FileType = "image" | "video" | "file";
 type UploadStatus = "idle" | "uploading" | "completed" | "error";
@@ -138,7 +139,6 @@ export function FileUploadField({
     event.preventDefault();
     event.stopPropagation();
   };
-  /****************************************************** */
 
   const handleDrop = async (event: React.DragEvent) => {
     event.preventDefault();
@@ -178,6 +178,8 @@ export function FileUploadField({
     onFileClear?.();
   };
 
+  /****************************************************** */
+  
   // Uploading or completed state - show file info with progress
   if (status === "uploading" || status === "completed") {
     return (
@@ -221,7 +223,7 @@ export function FileUploadField({
   return (
     <div className={cn("space-y-2", className)}>
       <Label>{label}</Label>
-      <label
+      <Label
         htmlFor={id}
         className={cn(
           "flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
@@ -255,7 +257,7 @@ export function FileUploadField({
           </p>
           <p className="text-xs text-muted-foreground mt-1">{displayHint}</p>
         </div>
-        <input
+        <Input  
           ref={inputRef}
           id={id}
           type="file"
@@ -263,7 +265,7 @@ export function FileUploadField({
           onChange={handleChange}
           accept={acceptType}
         />
-      </label>
+      </Label>
     </div>
   );
 }

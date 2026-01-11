@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   ImageIcon,
   VideoIcon,
@@ -22,30 +22,23 @@ import {
 import { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { getAllSavedForms, getFormById, deleteFormById } from "@/lib/storage";
-import type { FormData } from "@/types/form";
 import type { SavedForm } from "@/lib/storage";
+import Image from "next/image";
 
 export default function SummaryPage() {
-  const [selectedFormId, setSelectedFormId] = useState<string>("");
-  const [savedForms, setSavedForms] = useState<SavedForm[]>([]);
-  const [formData, setFormData] = useState<FormData | null>(null);
-
-  useEffect(() => {
+  const [savedForms, setSavedForms] = useState<SavedForm[]>(() =>
+    getAllSavedForms()
+  );
+  const [selectedFormId, setSelectedFormId] = useState<string>(() => {
     const forms = getAllSavedForms();
-    setSavedForms(forms);
-    if (forms.length > 0 && !selectedFormId) {
-      // Auto-select the latest form
-      setSelectedFormId(forms[forms.length - 1].id);
-    }
-  }, []);
+    return forms.length > 0 ? forms[forms.length - 1].id : "";
+  });
 
-  useEffect(() => {
+  const formData = useMemo(() => {
     if (selectedFormId) {
-      const data = getFormById(selectedFormId);
-      setFormData(data);
-    } else {
-      setFormData(null);
+      return getFormById(selectedFormId);
     }
+    return null;
   }, [selectedFormId]);
 
   const handleFormSelected = (value: string | null) => {
@@ -63,7 +56,6 @@ export default function SummaryPage() {
       setSelectedFormId(updatedForms[updatedForms.length - 1].id);
     } else {
       setSelectedFormId("");
-      setFormData(null);
     }
   };
 
@@ -74,7 +66,7 @@ export default function SummaryPage() {
   };
 
   return (
-    <Card className="w-full flex flex-col justify-center items-center">
+    <Card className="p-4 max-w-2xl mx-auto space-y-4 w-full flex flex-col justify-center items-center">
       <CardHeader className="w-full flex items-center justify-center">
         <CardTitle className="flex items-center justify-center gap-2">
           <Select
@@ -159,7 +151,9 @@ export default function SummaryPage() {
                   <p className="text-sm text-muted-foreground">
                     {formData?.image.name}
                   </p>
-                  <img
+                  <Image
+                    width={100}
+                    height={100}
                     src={formData?.image.dataUrl}
                     alt={formData?.image.name}
                     className="w-full max-h-64 object-contain rounded-lg border border-border bg-muted/50"
